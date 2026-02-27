@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Data Engineering on AWS | Practical Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #1e2330;
+    --accent: #00d4a1;
+    --accent2: #ff6b35;
+    --accent3: #7c6af7;
+    --text: #e8eaf0;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+    --code-bg: #0d1117;
+    --yellow: #fbbf24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,212,161,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(124,106,247,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,12,16,0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .nav-tags {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.75rem;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .tag.green { border-color: rgba(0,212,161,0.3); color: var(--accent); background: rgba(0,212,161,0.07); }
+  .tag.purple { border-color: rgba(124,106,247,0.3); color: var(--accent3); background: rgba(124,106,247,0.07); }
+  .tag.orange { border-color: rgba(255,107,53,0.3); color: var(--accent2); background: rgba(255,107,53,0.07); }
+
+  /* HERO */
+  .hero {
+    padding: 7rem 0 5rem;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.8rem, 6vw, 4.2rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    color: #fff;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    line-height: 1.8;
+  }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .hero-meta span { color: var(--text-dim); }
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 3rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arch-diagram::before {
+    content: 'ARCHITECTURE';
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+  }
+
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 1rem 0;
+  }
+
+  .arch-node {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    text-align: center;
+    min-width: 110px;
+    transition: border-color 0.2s;
+  }
+
+  .arch-node:hover { border-color: var(--accent); }
+
+  .arch-node .icon { font-size: 1.4rem; margin-bottom: 0.4rem; }
+  .arch-node .label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); text-transform: uppercase; }
+  .arch-node .sublabel { font-size: 0.6rem; color: var(--text-muted); margin-top: 0.2rem; font-family: 'JetBrains Mono', monospace; }
+
+  .arch-node.accent { border-color: rgba(0,212,161,0.4); background: rgba(0,212,161,0.06); }
+  .arch-node.purple { border-color: rgba(124,106,247,0.4); background: rgba(124,106,247,0.06); }
+  .arch-node.orange { border-color: rgba(255,107,53,0.4); background: rgba(255,107,53,0.06); }
+
+  .arch-arrow {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 0 0.4rem;
+    position: relative;
+  }
+
+  .arch-arrow::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: -1.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* SECTION HEADERS */
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: #fff;
+    margin: 4rem 0 1rem;
+    letter-spacing: -0.01em;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 2rem 0 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  p { color: var(--text-dim); margin-bottom: 1.2rem; font-size: 0.97rem; }
+
+  strong { color: var(--text); font-weight: 700; }
+
+  /* INFO BOX */
+  .info-box {
+    border-left: 3px solid var(--accent);
+    background: rgba(0,212,161,0.05);
+    border-radius: 0 6px 6px 0;
+    padding: 1.2rem 1.5rem;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+
+  .info-box.warning {
+    border-left-color: var(--yellow);
+    background: rgba(251,191,36,0.05);
+  }
+
+  .info-box.purple {
+    border-left-color: var(--accent3);
+    background: rgba(124,106,247,0.05);
+  }
+
+  .info-box-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .info-box.warning .info-box-title { color: var(--yellow); }
+  .info-box.purple .info-box-title { color: var(--accent3); }
+
+  /* CODE BLOCKS */
+  .code-wrapper {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    position: relative;
+  }
+
+  .code-header {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .code-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+
+  .code-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .code-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  pre {
+    padding: 1.5rem 1.5rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #c9d1d9;
+    tab-size: 2;
+  }
+
+  .kw { color: #ff79c6; }
+  .fn { color: #8be9fd; }
+  .str { color: #f1fa8c; }
+  .cm { color: #6272a4; font-style: italic; }
+  .num { color: #bd93f9; }
+  .cls { color: #50fa7b; }
+  .dec { color: #ffb86c; }
+  .var { color: #f8f8f2; }
+  .op { color: #ff79c6; }
+  .attr { color: #50fa7b; }
+
+  /* STEP CARDS */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.2rem;
+    align-items: flex-start;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .step-card:hover { border-color: var(--accent); transform: translateX(4px); }
+
+  .step-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: 0.4;
+  }
+
+  .step-content h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .step-content p { margin: 0; font-size: 0.88rem; }
+
+  /* SERVICE GRID */
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+
+  .service-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .service-card:hover { border-color: var(--accent3); }
+
+  .service-icon { font-size: 1.5rem; margin-bottom: 0.6rem; }
+
+  .service-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.03em;
+    margin-bottom: 0.4rem;
+  }
+
+  .service-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
+  /* METRICS TABLE */
+  .metrics {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+
+  .metrics-header {
+    background: var(--surface2);
+    padding: 0.8rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  td, th {
+    padding: 0.85rem 1.5rem;
+    text-align: left;
+    font-size: 0.83rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+  }
+
+  td:first-child { color: var(--text); font-weight: 600; }
+  td:not(:first-child) { color: var(--text-dim); }
+  td .badge { 
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .badge-green { background: rgba(0,212,161,0.15); color: var(--accent); }
+  .badge-yellow { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .badge-purple { background: rgba(124,106,247,0.15); color: var(--accent3); }
+
+  /* SCREENSHOT MOCKUPS */
+  .screenshot-mockup {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+
+  .mockup-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.7rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .mockup-url {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.25rem 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin: 0 0.5rem;
+  }
+
+  .mockup-body {
+    padding: 1.5rem;
+    min-height: 180px;
+  }
+
+  .console-output {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+  }
+
+  .console-output .prompt { color: var(--accent); }
+  .console-output .success { color: #50fa7b; }
+  .console-output .info { color: var(--accent3); }
+  .console-output .warn { color: var(--yellow); }
+  .console-output .agent-label {
+    display: inline-block;
+    background: rgba(0,212,161,0.15);
+    color: var(--accent);
+    padding: 0 0.4rem;
+    border-radius: 2px;
+    font-size: 0.65rem;
+  }
+
+  /* DIVIDER */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 3rem 0;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+  }
+
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 6rem;
+    padding: 3rem 0;
+    text-align: center;
+  }
+
+  footer p { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+  footer .footer-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero > * {
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero > *:nth-child(2) { animation-delay: 0.1s; }
+  .hero > *:nth-child(3) { animation-delay: 0.2s; }
+  .hero > *:nth-child(4) { animation-delay: 0.3s; }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin: 2rem 0 3rem;
+  }
+
+  .toc-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .toc ol {
+    padding-left: 1.2rem;
+    counter-reset: item;
+    list-style: none;
+  }
+
+  .toc li {
+    counter-increment: item;
+    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    position: relative;
+    padding-left: 0;
+  }
+
+  .toc li::before {
+    content: counter(item, decimal-leading-zero) ". ";
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-right: 0.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .service-grid { grid-template-columns: 1fr 1fr; }
+    .arch-flow { gap: 0; }
+    nav .nav-tags { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">// AGENTIC-DE-AWS</div>
+  <div class="nav-tags">
+    <span class="tag green">AWS re:Invent 2024</span>
+    <span class="tag purple">Bedrock Agents</span>
+    <span class="tag orange">Practical Guide</span>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-eyebrow">Deep Dive — Agentic Systems</div>
+    <h1>Agentic Data Engineering<br>on <em>AWS</em></h1>
+    <p class="hero-subtitle">
+      Build self-healing, autonomous data pipelines using Amazon Bedrock Agents, Step Functions, and Glue — with real-world code drawn from AWS re:Invent 2024 sessions on multi-agent architectures and LLM-powered data workflows.
+    </p>
+    <div class="hero-meta">
+      <span>Feb 27, 2026</span>
+      <span>·</span>
+      <span>18 min read</span>
+      <span>·</span>
+      <span>AWS Bedrock · Glue · Step Functions · Lambda · Athena</span>
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">// Table of Contents</div>
+    <ol>
+      <li>What is Agentic Data Engineering?</li>
+      <li>AWS Architecture Overview</li>
+      <li>Setting up Amazon Bedrock Agents</li>
+      <li>Building the Data Orchestration Agent</li>
+      <li>Multi-Agent Pipeline with Step Functions</li>
+      <li>Self-Healing Pipelines with Lambda + Bedrock</li>
+      <li>Natural Language to SQL with Athena</li>
+      <li>Observability & Cost Optimization</li>
+      <li>Production Checklist</li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2>1. What is Agentic Data Engineering?</h2>
+
+  <p>Traditional data pipelines are brittle. Schema drifts break ingestion, upstream API changes cascade downstream, and on-call engineers spend nights babysitting Airflow DAGs. <strong>Agentic Data Engineering</strong> replaces static orchestration logic with autonomous LLM agents that can reason, plan, and act.</p>
+
+  <p>As showcased in AWS re:Invent 2024 sessions like <em>"Building autonomous data pipelines with Amazon Bedrock"</em> and <em>"Multi-agent architectures for enterprise data platforms"</em>, the key shift is moving from <strong>imperative pipelines</strong> (do X, then Y, then Z) to <strong>goal-oriented agents</strong> (ensure the sales KPI dashboard is always up-to-date and accurate).</p>
+
+  <div class="info-box">
+    <div class="info-box-title">🎯 Core Concept from AWS re:Invent DAT405</div>
+    Agentic DE operates on a <strong>Perceive → Reason → Act → Reflect</strong> loop. Agents perceive data quality signals via CloudWatch, reason with Claude 3.5 Sonnet via Bedrock, act via Lambda tool calls, and reflect by logging outcomes to DynamoDB for few-shot learning.
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-number">01</div>
+      <div class="step-content">
+        <h4>Perceive</h4>
+        <p>Agents monitor S3 events, Glue job metrics, CloudWatch alarms, and data quality scores from AWS Glue Data Quality rules.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">02</div>
+      <div class="step-content">
+        <h4>Reason</h4>
+        <p>Amazon Bedrock (Claude 3.5 Sonnet) analyzes the context — schema drift, anomaly reports, SLA breach risks — and determines the best corrective action.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">03</div>
+      <div class="step-content">
+        <h4>Act</h4>
+        <p>Agents invoke Lambda action groups: re-trigger Glue crawlers, patch schema mappings, quarantine bad records to an S3 dead-letter prefix, or alert PagerDuty.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">04</div>
+      <div class="step-content">
+        <h4>Reflect</h4>
+        <p>Actions and outcomes are stored in an agent memory store (DynamoDB + S3). The agent learns which remediation strategies work for which failure patterns.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- AWS SERVICES -->
+  <h2>2. AWS Architecture Overview</h2>
+
+  <p>The reference architecture demonstrated at AWS events combines six core services. Each plays a distinct role in the agentic loop:</p>
+
+  <div class="service-grid">
+    <div class="service-card">
+      <div class="service-icon">🤖</div>
+      <div class="service-name">Amazon Bedrock Agents</div>
+      <div class="service-desc">Orchestrates multi-step reasoning with Claude 3.5 Sonnet. Manages tool calls (action groups) and memory.</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">⚙️</div>
+      <div class="service-name">AWS Step Functions</div>
+      <div class="service-desc">Durable workflow orchestration for multi-agent coordination with built-in retry and compensation logic.</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🔥</div>
+      <div class="service-name">AWS Glue + DQ</div>
+      <div class="service-desc">ETL jobs, crawlers, and Data Quality rules that emit quality scores agents use to make decisions.</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">⚡</div>
+      <div class="service-name">AWS Lambda</div>
+      <div class="service-desc">Action group executors — the "hands" of the agent. Trigger crawlers, patch metadata, send alerts.</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🔍</div>
+      <div class="service-name">Amazon Athena</div>
+      <div class="service-desc">NL-to-SQL endpoint. Agents generate and execute queries against the Glue Data Catalog on demand.</div>
+    </div>
+    <div class="service-card">
+      <div class="service-icon">🧠</div>
+      <div class="service-name">Bedrock Knowledge Bases</div>
+      <div class="service-desc">RAG layer for pipeline runbooks, data dictionaries, and past incident remediation history.</div>
+    </div>
+  </div>
+
+  <!-- ARCH DIAGRAM -->
+  <div class="arch-diagram">
+    <div class="arch-flow">
+      <div class="arch-node">
+        <div class="icon">📡</div>
+        <div class="label">EventBridge</div>
+        <div class="sublabel">Trigger</div>
+      </div>
+      <div class="arch-arrow" data-label="event">→</div>
+      <div class="arch-node accent">
+        <div class="icon">🤖</div>
+        <div class="label">Bedrock Agent</div>
+        <div class="sublabel">Supervisor</div>
+      </div>
+      <div class="arch-arrow" data-label="plan">→</div>
+      <div class="arch-node purple">
+        <div class="icon">🔧</div>
+        <div class="label">Step Fn</div>
+        <div class="sublabel">Orchestrate</div>
+      </div>
+      <div class="arch-arrow" data-label="invoke">→</div>
+      <div class="arch-node">
+        <div class="icon">⚡</div>
+        <div class="label">Lambda</div>
+        <div class="sublabel">Action Group</div>
+      </div>
+      <div class="arch-arrow" data-label="transform">→</div>
+      <div class="arch-node orange">
+        <div class="icon">🔥</div>
+        <div class="label">Glue Job</div>
+        <div class="sublabel">ETL + DQ</div>
+      </div>
+      <div class="arch-arrow" data-label="query">→</div>
+      <div class="arch-node accent">
+        <div class="icon">🔍</div>
+        <div class="label">Athena</div>
+        <div class="sublabel">Validate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <h2>3. Setting Up Amazon Bedrock Agent</h2>
+
+  <p>We'll create a Bedrock Agent with <strong>two action groups</strong>: one for pipeline management and one for data quality remediation. Using the AWS SDK with Python (boto3):</p>
+
+  <div class="code-wrapper">
+    <div class="code-header">
+      <div class="code-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="code-lang">Python · boto3</div>
+      <div class="code-filename">create_agent.py</div>
+    </div>
+    <pre><span class="kw">import</span> boto3
+<span class="kw">import</span> json
+
+bedrock_agent = boto3.<span class="fn">client</span>(<span class="str">'bedrock-agent'</span>, region_name=<span class="str">'us-east-1'</span>)
+
+<span class="cm"># Step 1: Create the Bedrock Agent</span>
+agent_response = bedrock_agent.<span class="fn">create_agent</span>(
+    agentName=<span class="str">'DataEngineeringAgent'</span>,
+    foundationModel=<span class="str">'anthropic.claude-3-5-sonnet-20241022-v2:0'</span>,
+    instruction=<span class="str">"""
+    You are an autonomous data engineering agent responsible for:
+    1. Monitoring AWS Glue pipeline health and data quality scores
+    2. Diagnosing root causes of pipeline failures using CloudWatch metrics
+    3. Triggering remediation: re-run failed jobs, quarantine bad records,
+       patch schema mappings, or escalate to humans when confidence is low
+    4. Answering natural language queries about data using Athena
+    
+    Always explain your reasoning before taking action.
+    Log all actions with severity and expected impact.
+    """</span>,
+    idleSessionTTLInSeconds=<span class="num">3600</span>,
+    agentResourceRoleArn=<span class="str">'arn:aws:iam::123456789:role/BedrockAgentRole'</span>,
+)
+
+agent_id = agent_response[<span class="str">'agent'</span>][<span class="str">'agentId'</span>]
+<span class="fn">print</span>(<span class="str">f"Agent created: {agent_id}"</span>)
+
+<span class="cm"># Step 2: Add Action Group — Pipeline Management</span>
+bedrock_agent.<span class="fn">create_agent_action_group</span>(
+    agentId=agent_id,
+    agentVersion=<span class="str">'DRAFT'</span>,
+    actionGroupName=<span class="str">'PipelineManagement'</span>,
+    actionGroupExecutor={
+        <span class="str">'lambda'</span>: <span class="str">'arn:aws:lambda:us-east-1:123456789:function:pipeline-manager'</span>
+    },
+    functionSchema={
+        <span class="str">'functions'</span>: [
+            {
+                <span class="str">'name'</span>: <span class="str">'trigger_glue_job'</span>,
+                <span class="str">'description'</span>: <span class="str">'Trigger or re-run a Glue ETL job by name'</span>,
+                <span class="str">'parameters'</span>: {
+                    <span class="str">'job_name'</span>: {<span class="str">'type'</span>: <span class="str">'string'</span>, <span class="str">'required'</span>: <span class="kw">True</span>},
+                    <span class="str">'arguments'</span>: {<span class="str">'type'</span>: <span class="str">'object'</span>, <span class="str">'required'</span>: <span class="kw">False</span>}
+                }
+            },
+            {
+                <span class="str">'name'</span>: <span class="str">'get_job_status'</span>,
+                <span class="str">'description'</span>: <span class="str">'Get status, duration, and error logs for a Glue job run'</span>,
+                <span class="str">'parameters'</span>: {
+                    <span class="str">'job_name'</span>: {<span class="str">'type'</span>: <span class="str">'string'</span>, <span class="str">'required'</span>: <span class="kw">True</span>},
+                    <span class="str">'run_id'</span>: {<span class="str">'type'</span>: <span class="str">'string'</span>, <span class="str">'required'</span>: <span class="kw">False</span>}
+                }
+            },
+            {
+                <span class="str">'name'</span>: <span class="str">'quarantine_records'</span>,
+                <span class="str">'description'</span>: <span class="str">'Move bad records to quarantine S3 prefix for review'</span>,
+                <span class="str">'parameters'</span>: {
+                    <span class="str">'source_path'</span>: {<span class="str">'type'</span>: <span class="str">'string'</span>, <span class="str">'required'</span>: <span class="kw">True</span>},
+                    <span class="str">'reason'</span>: {<span class="str">'type'</span>: <span class="str">'string'</span>, <span class="str">'required'</span>: <span class="kw">True</span>}
+                }
+            }
+        ]
+    }
+)</pre>
+  </div>
+
+  <!-- SECTION 4 -->
+  <h2>4. Building the Data Orchestration Agent</h2>
+
+  <p>The Lambda function backing the action group is the agent's "hands." Here's the complete handler that routes agent tool calls to real AWS API operations:</p>
+
+  <div class="code-wrapper">
+    <div class="code-header">
+      <div class="code-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="code-lang">Python · Lambda</div>
+      <div class="code-filename">pipeline-manager/handler.py</div>
+    </div>
+    <pre><span class="kw">import</span> boto3
+<span class="kw">import</span> json
+<span class="kw">import</span> logging
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime
+
+logger = logging.<span class="fn">getLogger</span>()
+glue = boto3.<span class="fn">client</span>(<span class="str">'glue'</span>)
+s3 = boto3.<span class="fn">client</span>(<span class="str">'s3'</span>)
+
+
+<span class="kw">def</span> <span class="fn">lambda_handler</span>(event, context):
+    <span class="cm">"""Bedrock Agent Action Group handler — routes tool calls"""</span>
+    
+    action_group = event[<span class="str">'actionGroup'</span>]
+    function_name = event[<span class="str">'function'</span>]
+    params = {p[<span class="str">'name'</span>]: p[<span class="str">'value'</span>] 
+              <span class="kw">for</span> p <span class="kw">in</span> event.get(<span class="str">'parameters'</span>, [])}
+    
+    logger.<span class="fn">info</span>(<span class="str">f"Agent calling: {function_name} with {params}"</span>)
+    
+    result = <span class="fn">dispatch</span>(function_name, params)
+    
+    <span class="cm"># Bedrock agents expect this response shape</span>
+    <span class="kw">return</span> {
+        <span class="str">'messageVersion'</span>: <span class="str">'1.0'</span>,
+        <span class="str">'response'</span>: {
+            <span class="str">'actionGroup'</span>: action_group,
+            <span class="str">'function'</span>: function_name,
+            <span class="str">'functionResponse'</span>: {
+                <span class="str">'responseBody'</span>: {
+                    <span class="str">'TEXT'</span>: {<span class="str">'body'</span>: json.<span class="fn">dumps</span>(result)}
+                }
+            }
+        }
+    }
+
+
+<span class="kw">def</span> <span class="fn">dispatch</span>(fn, params):
+    handlers = {
+        <span class="str">'trigger_glue_job'</span>: <span class="fn">trigger_glue_job</span>,
+        <span class="str">'get_job_status'</span>: <span class="fn">get_job_status</span>,
+        <span class="str">'quarantine_records'</span>: <span class="fn">quarantine_records</span>,
+    }
+    handler = handlers.get(fn)
+    <span class="kw">if not</span> handler:
+        <span class="kw">raise</span> <span class="cls">ValueError</span>(<span class="str">f"Unknown function: {fn}"</span>)
+    <span class="kw">return</span> <span class="fn">handler</span>(**params)
+
+
+<span class="kw">def</span> <span class="fn">trigger_glue_job</span>(job_name, arguments=<span class="kw">None</span>):
+    <span class="kw">try</span>:
+        run = glue.<span class="fn">start_job_run</span>(
+            JobName=job_name,
+            Arguments=arguments <span class="kw">or</span> {}
+        )
+        <span class="kw">return</span> {
+            <span class="str">'status'</span>: <span class="str">'started'</span>,
+            <span class="str">'run_id'</span>: run[<span class="str">'JobRunId'</span>],
+            <span class="str">'message'</span>: <span class="str">f"Glue job '{job_name}' triggered successfully"</span>
+        }
+    <span class="kw">except</span> <span class="cls">Exception</span> <span class="kw">as</span> e:
+        <span class="kw">return</span> {<span class="str">'status'</span>: <span class="str">'error'</span>, <span class="str">'message'</span>: <span class="fn">str</span>(e)}
+
+
+<span class="kw">def</span> <span class="fn">get_job_status</span>(job_name, run_id=<span class="kw">None</span>):
+    <span class="kw">if</span> run_id:
+        runs = glue.<span class="fn">get_job_run</span>(JobName=job_name, RunId=run_id)
+        run = runs[<span class="str">'JobRun'</span>]
+    <span class="kw">else</span>:
+        <span class="cm"># Get the most recent run</span>
+        runs = glue.<span class="fn">get_job_runs</span>(JobName=job_name, MaxResults=<span class="num">1</span>)
+        run = runs[<span class="str">'JobRuns'</span>][<span class="num">0</span>]
+    
+    <span class="kw">return</span> {
+        <span class="str">'run_id'</span>: run[<span class="str">'Id'</span>],
+        <span class="str">'state'</span>: run[<span class="str">'JobRunState'</span>],
+        <span class="str">'started_on'</span>: run[<span class="str">'StartedOn'</span>].<span class="fn">isoformat</span>(),
+        <span class="str">'execution_time_seconds'</span>: run.get(<span class="str">'ExecutionTime'</span>, <span class="num">0</span>),
+        <span class="str">'error_message'</span>: run.get(<span class="str">'ErrorMessage'</span>, <span class="kw">None</span>),
+        <span class="str">'dpu_seconds'</span>: run.get(<span class="str">'DPUSeconds'</span>, <span class="num">0</span>)
+    }
+
+
+<span class="kw">def</span> <span class="fn">quarantine_records</span>(source_path, reason):
+    <span class="cm"># Parse s3://bucket/prefix/file.parquet</span>
+    parts = source_path.<span class="fn">replace</span>(<span class="str">'s3://'</span>, <span class="str">''</span>).<span class="fn">split</span>(<span class="str">'/'</span>, <span class="num">1</span>)
+    bucket, key = parts[<span class="num">0</span>], parts[<span class="num">1</span>]
+    
+    timestamp = datetime.<span class="fn">utcnow</span>().<span class="fn">strftime</span>(<span class="str">'%Y%m%d_%H%M%S'</span>)
+    dest_key = <span class="str">f"quarantine/{timestamp}/{key.split('/')[-1]}"</span>
+    
+    s3.<span class="fn">copy_object</span>(
+        Bucket=bucket,
+        CopySource={<span class="str">'Bucket'</span>: bucket, <span class="str">'Key'</span>: key},
+        Destination=dest_key,
+        Metadata={<span class="str">'quarantine_reason'</span>: reason, <span class="str">'timestamp'</span>: timestamp},
+        MetadataDirective=<span class="str">'REPLACE'</span>
+    )
+    s3.<span class="fn">delete_object</span>(Bucket=bucket, Key=key)
+    
+    <span class="kw">return</span> {
+        <span class="str">'status'</span>: <span class="str">'quarantined'</span>,
+        <span class="str">'destination'</span>: <span class="str">f"s3://{bucket}/{dest_key}"</span>,
+        <span class="str">'reason'</span>: reason
+    }</pre>
+  </div>
+
+  <div class="info-box warning">
+    <div class="info-box-title">⚠️ IAM Permissions Required</div>
+    The Lambda execution role needs: <code>glue:StartJobRun</code>, <code>glue:GetJobRun</code>, <code>s3:CopyObject</code>, <code>s3:DeleteObject</code>, and <code>bedrock:InvokeAgent</code>. The Bedrock Agent role needs <code>bedrock:InvokeModel</code> and <code>lambda:InvokeFunction</code>.
+  </div>
+
+  <!-- SECTION 5 -->
+  <h2>5. Multi-Agent Pipeline with Step Functions</h2>
+
+  <p>For complex pipelines, a <strong>Supervisor Agent</strong> delegates to specialized sub-agents via Step Functions. This pattern — highlighted in the AWS re:Invent session on multi-agent data platforms — enables parallel agent execution with fault isolation.</p>
+
+  <div class="code-wrapper">
+    <div class="code-header">
+      <div class="code-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="code-lang">JSON · Step Functions ASL</div>
+      <div class="code-filename">agentic_pipeline.asl.json</div>
+    </div>
+    <pre>{
+  <span class="attr">"Comment"</span>: <span class="str">"Agentic Data Engineering Pipeline — multi-agent"</span>,
+  <span class="attr">"StartAt"</span>: <span class="str">"SupervisorAgent"</span>,
+  <span class="attr">"States"</span>: {
+    
+    <span class="attr">"SupervisorAgent"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+      <span class="attr">"Resource"</span>: <span class="str">"arn:aws:states:::bedrock:invokeAgent"</span>,
+      <span class="attr">"Parameters"</span>: {
+        <span class="attr">"AgentId"</span>: <span class="str">"SUPERVISOR_AGENT_ID"</span>,
+        <span class="attr">"AgentAliasId"</span>: <span class="str">"PROD"</span>,
+        <span class="attr">"SessionId.$"</span>: <span class="str">"$.execution_id"</span>,
+        <span class="attr">"InputText.$"</span>: <span class="str">"States.Format('Analyze pipeline status for date {} and determine required actions. Pipeline: {}', $.date, $.pipeline_name)"</span>
+      },
+      <span class="attr">"ResultPath"</span>: <span class="str">"$.supervisor_plan"</span>,
+      <span class="attr">"Next"</span>: <span class="str">"ParsePlan"</span>
+    },
+
+    <span class="attr">"ParsePlan"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+      <span class="attr">"Resource"</span>: <span class="str">"arn:aws:lambda:us-east-1:123456789:function:parse-agent-plan"</span>,
+      <span class="attr">"Next"</span>: <span class="str">"RouteToAgents"</span>
+    },
+
+    <span class="attr">"RouteToAgents"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Choice"</span>,
+      <span class="attr">"Choices"</span>: [
+        {
+          <span class="attr">"Variable"</span>: <span class="str">"$.plan.action"</span>,
+          <span class="attr">"StringEquals"</span>: <span class="str">"DATA_QUALITY_REMEDIATION"</span>,
+          <span class="attr">"Next"</span>: <span class="str">"ParallelRemediation"</span>
+        },
+        {
+          <span class="attr">"Variable"</span>: <span class="str">"$.plan.action"</span>,
+          <span class="attr">"StringEquals"</span>: <span class="str">"SCHEMA_EVOLUTION"</span>,
+          <span class="attr">"Next"</span>: <span class="str">"SchemaEvolutionAgent"</span>
+        }
+      ],
+      <span class="attr">"Default"</span>: <span class="str">"HumanApproval"</span>
+    },
+
+    <span class="attr">"ParallelRemediation"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Parallel"</span>,
+      <span class="attr">"Branches"</span>: [
+        {
+          <span class="attr">"StartAt"</span>: <span class="str">"DataQualityAgent"</span>,
+          <span class="attr">"States"</span>: {
+            <span class="attr">"DataQualityAgent"</span>: {
+              <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+              <span class="attr">"Resource"</span>: <span class="str">"arn:aws:states:::bedrock:invokeAgent"</span>,
+              <span class="attr">"Parameters"</span>: {
+                <span class="attr">"AgentId"</span>: <span class="str">"DQ_AGENT_ID"</span>,
+                <span class="attr">"AgentAliasId"</span>: <span class="str">"PROD"</span>,
+                <span class="attr">"InputText.$"</span>: <span class="str">"$.plan.dq_task"</span>
+              },
+              <span class="attr">"End"</span>: <span class="kw">true</span>
+            }
+          }
+        },
+        {
+          <span class="attr">"StartAt"</span>: <span class="str">"AnomalyDetectionAgent"</span>,
+          <span class="attr">"States"</span>: {
+            <span class="attr">"AnomalyDetectionAgent"</span>: {
+              <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+              <span class="attr">"Resource"</span>: <span class="str">"arn:aws:states:::bedrock:invokeAgent"</span>,
+              <span class="attr">"Parameters"</span>: {
+                <span class="attr">"AgentId"</span>: <span class="str">"ANOMALY_AGENT_ID"</span>,
+                <span class="attr">"InputText.$"</span>: <span class="str">"$.plan.anomaly_task"</span>
+              },
+              <span class="attr">"End"</span>: <span class="kw">true</span>
+            }
+          }
+        }
+      ],
+      <span class="attr">"Next"</span>: <span class="str">"AggregateResults"</span>
+    },
+
+    <span class="attr">"HumanApproval"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+      <span class="attr">"Resource"</span>: <span class="str">"arn:aws:states:::sqs:sendMessage.waitForTaskToken"</span>,
+      <span class="attr">"Parameters"</span>: {
+        <span class="attr">"QueueUrl"</span>: <span class="str">"https://sqs.us-east-1.amazonaws.com/123456789/approvals"</span>,
+        <span class="attr">"MessageBody"</span>: {
+          <span class="attr">"TaskToken.$"</span>: <span class="str">"$$.Task.Token"</span>,
+          <span class="attr">"Plan.$"</span>: <span class="str">"$.plan"</span>
+        }
+      },
+      <span class="attr">"TimeoutSeconds"</span>: <span class="num">86400</span>,
+      <span class="attr">"Next"</span>: <span class="str">"AggregateResults"</span>
+    },
+
+    <span class="attr">"AggregateResults"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+      <span class="attr">"Resource"</span>: <span class="str">"arn:aws:lambda:us-east-1:123456789:function:aggregate-results"</span>,
+      <span class="attr">"End"</span>: <span class="kw">true</span>
+    }
+  }
+}</pre>
+  </div>
+
+  <!-- SECTION 6 -->
+  <h2>6. Self-Healing Pipelines</h2>
+
+  <p>The most compelling demo from AWS re:Invent 2024 showed a Glue job failing at 2 AM due to schema drift — and the Bedrock agent waking up, diagnosing the issue, patching the schema mapping, and re-running the job without human intervention. Here's how to build that:</p>
+
+  <div class="code-wrapper">
+    <div class="code-header">
+      <div class="code-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="code-lang">Python</div>
+      <div class="code-filename">self_healing_agent.py</div>
+    </div>
+    <pre><span class="kw">import</span> boto3
+<span class="kw">import</span> json
+
+bedrock_runtime = boto3.<span class="fn">client</span>(<span class="str">'bedrock-agent-runtime'</span>, region_name=<span class="str">'us-east-1'</span>)
+cloudwatch = boto3.<span class="fn">client</span>(<span class="str">'cloudwatch'</span>)
+
+
+<span class="kw">def</span> <span class="fn">handle_pipeline_failure</span>(event, context):
+    <span class="cm">"""
+    Triggered by EventBridge rule on Glue job state change → FAILED
+    Invokes Bedrock agent to diagnose and remediate
+    """</span>
+    job_name = event[<span class="str">'detail'</span>][<span class="str">'jobName'</span>]
+    run_id = event[<span class="str">'detail'</span>][<span class="str">'jobRunId'</span>]
+    error_message = event[<span class="str">'detail'</span>].get(<span class="str">'message'</span>, <span class="str">'Unknown error'</span>)
+    
+    <span class="cm"># Collect additional context from CloudWatch Logs</span>
+    logs_context = <span class="fn">get_error_logs</span>(job_name, run_id)
+    
+    <span class="cm"># Build the diagnosis prompt</span>
+    prompt = <span class="str">f"""
+    URGENT: Glue job '{job_name}' (run: {run_id}) has FAILED.
+    
+    Error: {error_message}
+    
+    Recent log output:
+    {logs_context}
+    
+    Please:
+    1. Diagnose the root cause
+    2. Determine if this is auto-remediable (schema drift, transient error, 
+       data quality issue) or requires human escalation
+    3. If auto-remediable, take corrective action and re-trigger the job
+    4. Report your actions and confidence level (0-100%)
+    """</span>
+    
+    <span class="cm"># Invoke the agent — streaming response</span>
+    response = bedrock_runtime.<span class="fn">invoke_agent</span>(
+        agentId=<span class="str">'YOUR_AGENT_ID'</span>,
+        agentAliasId=<span class="str">'PROD'</span>,
+        sessionId=<span class="str">f"healing-{job_name}-{run_id}"</span>,
+        inputText=prompt,
+        enableTrace=<span class="kw">True</span>  <span class="cm"># Critical for observability</span>
+    )
+    
+    <span class="cm"># Process streaming response and collect traces</span>
+    full_response = <span class="str">""</span>
+    traces = []
+    
+    <span class="kw">for</span> event <span class="kw">in</span> response[<span class="str">'completion'</span>]:
+        <span class="kw">if</span> <span class="str">'chunk'</span> <span class="kw">in</span> event:
+            full_response += event[<span class="str">'chunk'</span>][<span class="str">'bytes'</span>].<span class="fn">decode</span>()
+        <span class="kw">elif</span> <span class="str">'trace'</span> <span class="kw">in</span> event:
+            traces.<span class="fn">append</span>(event[<span class="str">'trace'</span>])
+    
+    <span class="cm"># Emit custom metrics</span>
+    cloudwatch.<span class="fn">put_metric_data</span>(
+        Namespace=<span class="str">'AgenticDE/SelfHealing'</span>,
+        MetricData=[{
+            <span class="str">'MetricName'</span>: <span class="str">'AutoRemediationAttempt'</span>,
+            <span class="str">'Dimensions'</span>: [{<span class="str">'Name'</span>: <span class="str">'JobName'</span>, <span class="str">'Value'</span>: job_name}],
+            <span class="str">'Value'</span>: <span class="num">1</span>,
+            <span class="str">'Unit'</span>: <span class="str">'Count'</span>
+        }]
+    )
+    
+    <span class="kw">return</span> {
+        <span class="str">'agent_response'</span>: full_response,
+        <span class="str">'trace_steps'</span>: <span class="fn">len</span>(traces),
+        <span class="str">'job_name'</span>: job_name
+    }
+
+
+<span class="kw">def</span> <span class="fn">get_error_logs</span>(job_name, run_id):
+    <span class="kw">import</span> boto3
+    logs = boto3.<span class="fn">client</span>(<span class="str">'logs'</span>)
+    <span class="kw">try</span>:
+        response = logs.<span class="fn">filter_log_events</span>(
+            logGroupName=<span class="str">f"/aws-glue/jobs/error"</span>,
+            filterPattern=run_id,
+            limit=<span class="num">20</span>
+        )
+        <span class="kw">return</span> <span class="str">"\n"</span>.<span class="fn">join</span>([e[<span class="str">'message'</span>] <span class="kw">for</span> e <span class="kw">in</span> response[<span class="str">'events'</span>]])
+    <span class="kw">except</span>:
+        <span class="kw">return</span> <span class="str">"No additional log context available"</span></pre>
+  </div>
+
+  <!-- CONSOLE MOCKUP -->
+  <div class="screenshot-mockup">
+    <div class="mockup-bar">
+      <span class="mockup-dot" style="background:#ff5f56"></span>
+      <span class="mockup-dot" style="background:#ffbd2e"></span>
+      <span class="mockup-dot" style="background:#27c93f"></span>
+      <div class="mockup-url">Amazon CloudWatch Logs — Bedrock Agent Trace</div>
+    </div>
+    <div class="mockup-body">
+      <div class="console-output">
+<span class="prompt">▶ TRACE [2025-02-27 03:14:22Z]</span> <span class="agent-label">SUPERVISOR</span> Received failure event: glue-job-sales-transform / jr_a3f89c12
+<span class="info">→ REASONING:</span> Error message contains "AnalysisException: cannot resolve 'revenue_usd' given input columns". This is a schema drift — column renamed upstream.
+<span class="info">→ PLAN:</span> (1) Run Glue Crawler on source to detect new schema (2) Update mapping in job script (3) Re-trigger job
+<span class="prompt">▶ TRACE [03:14:25Z]</span> <span class="agent-label">ACTION</span> Calling trigger_glue_crawler(crawler_name="s3-sales-raw-crawler")
+<span class="success">✓ RESULT:</span> Crawler run started: cr_b92f1e44 — found new column "revenue_local_currency", "revenue_usd" → renamed
+<span class="prompt">▶ TRACE [03:14:48Z]</span> <span class="agent-label">ACTION</span> Calling patch_schema_mapping(job_name="glue-job-sales-transform", old_col="revenue_usd", new_col="revenue_local_currency")
+<span class="success">✓ RESULT:</span> Schema mapping updated in job parameters
+<span class="prompt">▶ TRACE [03:14:51Z]</span> <span class="agent-label">ACTION</span> Calling trigger_glue_job(job_name="glue-job-sales-transform")
+<span class="success">✓ RESULT:</span> Job run started: jr_c01d2e55 — monitoring...
+<span class="prompt">▶ TRACE [03:22:15Z]</span> <span class="agent-label">SUPERVISOR</span> <span class="success">RESOLVED</span> Job completed successfully. Processed 1.2M records in 7m 24s. Confidence: 94%
+<span class="warn">⚠ LOGGED:</span> Incident auto-resolved. Human review recommended for schema governance policy update.</div>
+    </div>
+  </div>
+
+  <!-- SECTION 7 -->
+  <h2>7. Natural Language to SQL with Athena</h2>
+
+  <p>One of the most practical agent features — demoed live at AWS re:Invent — is letting data consumers ask questions in plain English. The agent generates and validates Athena SQL before executing it:</p>
+
+  <div class="code-wrapper">
+    <div class="code-header">
+      <div class="code-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="code-lang">Python</div>
+      <div class="code-filename">nl_to_sql_action.py</div>
+    </div>
+    <pre><span class="kw">import</span> boto3
+<span class="kw">import</span> time
+<span class="kw">import</span> re
+
+athena = boto3.<span class="fn">client</span>(<span class="str">'athena'</span>)
+bedrock = boto3.<span class="fn">client</span>(<span class="str">'bedrock-runtime'</span>)
+
+<span class="cm"># This Lambda is an action group function called by the agent</span>
+<span class="kw">def</span> <span class="fn">execute_nl_query</span>(natural_language_question, database=<span class="str">"data_warehouse"</span>):
+    <span class="cm">"""
+    Action group handler: NL question → Athena SQL → results
+    The Bedrock agent calls this when users ask data questions
+    """</span>
+    
+    <span class="cm"># Get schema context from Glue Data Catalog</span>
+    schema_context = <span class="fn">get_catalog_schema</span>(database)
+    
+    <span class="cm"># Generate SQL using Claude directly (inner call for SQL gen only)</span>
+    sql_prompt = <span class="str">f"""Generate a single valid Athena SQL query to answer this question.
+Database: {database}
+Available tables and schemas:
+{schema_context}
+
+Question: {natural_language_question}
+
+Rules:
+- Return ONLY the SQL query, no explanation
+- Use Athena-compatible syntax (Presto SQL)  
+- LIMIT results to 1000 rows unless aggregating
+- Handle NULL values appropriately
+"""</span>
+    
+    sql_response = bedrock.<span class="fn">invoke_model</span>(
+        modelId=<span class="str">'anthropic.claude-3-5-sonnet-20241022-v2:0'</span>,
+        body=json.<span class="fn">dumps</span>({
+            <span class="str">'anthropic_version'</span>: <span class="str">'bedrock-2023-05-31'</span>,
+            <span class="str">'max_tokens'</span>: <span class="num">512</span>,
+            <span class="str">'messages'</span>: [{<span class="str">'role'</span>: <span class="str">'user'</span>, <span class="str">'content'</span>: sql_prompt}]
+        })
+    )
+    
+    sql_query = json.<span class="fn">loads</span>(sql_response[<span class="str">'body'</span>].<span class="fn">read</span>())[<span class="str">'content'</span>][<span class="num">0</span>][<span class="str">'text'</span>].<span class="fn">strip</span>()
+    
+    <span class="cm"># Safety validation — block destructive statements</span>
+    dangerous = [<span class="str">'DROP'</span>, <span class="str">'DELETE'</span>, <span class="str">'INSERT'</span>, <span class="str">'UPDATE'</span>, <span class="str">'ALTER'</span>, <span class="str">'TRUNCATE'</span>]
+    <span class="kw">if</span> <span class="fn">any</span>(kw <span class="kw">in</span> sql_query.<span class="fn">upper</span>() <span class="kw">for</span> kw <span class="kw">in</span> dangerous):
+        <span class="kw">return</span> {<span class="str">'error'</span>: <span class="str">'Query blocked: only SELECT statements are permitted'</span>}
+    
+    <span class="cm"># Execute on Athena</span>
+    execution = athena.<span class="fn">start_query_execution</span>(
+        QueryString=sql_query,
+        QueryExecutionContext={<span class="str">'Database'</span>: database},
+        ResultConfiguration={
+            <span class="str">'OutputLocation'</span>: <span class="str">'s3://my-athena-results/agent-queries/'</span>
+        },
+        WorkGroup=<span class="str">'primary'</span>
+    )
+    
+    query_id = execution[<span class="str">'QueryExecutionId'</span>]
+    
+    <span class="cm"># Poll for completion (with timeout)</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="num">30</span>):
+        status = athena.<span class="fn">get_query_execution</span>(QueryExecutionId=query_id)
+        state = status[<span class="str">'QueryExecution'</span>][<span class="str">'Status'</span>][<span class="str">'State'</span>]
+        <span class="kw">if</span> state == <span class="str">'SUCCEEDED'</span>:
+            <span class="kw">break</span>
+        <span class="kw">elif</span> state <span class="kw">in</span> [<span class="str">'FAILED'</span>, <span class="str">'CANCELLED'</span>]:
+            <span class="kw">return</span> {<span class="str">'error'</span>: <span class="str">f"Query {state}"</span>, <span class="str">'query'</span>: sql_query}
+        time.<span class="fn">sleep</span>(<span class="num">2</span>)
+    
+    <span class="cm"># Fetch results</span>
+    results = athena.<span class="fn">get_query_results</span>(QueryExecutionId=query_id, MaxResults=<span class="num">50</span>)
+    
+    rows = results[<span class="str">'ResultSet'</span>][<span class="str">'Rows'</span>]
+    headers = [c[<span class="str">'VarCharValue'</span>] <span class="kw">for</span> c <span class="kw">in</span> rows[<span class="num">0</span>][<span class="str">'Data'</span>]]
+    data = [[c.get(<span class="str">'VarCharValue'</span>, <span class="str">''</span>) <span class="kw">for</span> c <span class="kw">in</span> row[<span class="str">'Data'</span>]] <span class="kw">for</span> row <span class="kw">in</span> rows[<span class="num">1</span>:]]
+    
+    <span class="kw">return</span> {
+        <span class="str">'sql_generated'</span>: sql_query,
+        <span class="str">'columns'</span>: headers,
+        <span class="str">'rows'</span>: data,
+        <span class="str">'row_count'</span>: <span class="fn">len</span>(data),
+        <span class="str">'query_cost_tb_scanned'</span>: status[<span class="str">'QueryExecution'</span>][<span class="str">'Statistics'</span>].get(<span class="str">'DataScannedInBytes'</span>, <span class="num">0</span>) / <span class="num">1e12</span>
+    }</pre>
+  </div>
+
+  <!-- SECTION 8 -->
+  <h2>8. Observability & Cost Optimization</h2>
+
+  <p>Agents can rack up significant Bedrock invocation costs if left unchecked. AWS recommends these guardrails, which were covered in the cost optimization session at AWS re:Invent 2024:</p>
+
+  <div class="metrics">
+    <div class="metrics-header">// Key Metrics to Track — AgenticDE/Operations Namespace</div>
+    <table>
+      <tr>
+        <th>Metric</th>
+        <th>Description</th>
+        <th>Alert Threshold</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>AgentInvocations</td>
+        <td>Total Bedrock agent invocations per hour</td>
+        <td>&gt; 500/hr</td>
+        <td><span class="badge badge-green">Nominal</span></td>
+      </tr>
+      <tr>
+        <td>AutoRemediationRate</td>
+        <td>% of failures resolved without human</td>
+        <td>&lt; 60% → investigate</td>
+        <td><span class="badge badge-green">84%</span></td>
+      </tr>
+      <tr>
+        <td>TokensPerResolution</td>
+        <td>Avg input+output tokens per pipeline fix</td>
+        <td>&gt; 8000 → optimize prompt</td>
+        <td><span class="badge badge-yellow">6,240</span></td>
+      </tr>
+      <tr>
+        <td>FalsePositiveActions</td>
+        <td>Agent actions that made things worse</td>
+        <td>&gt; 1% → add guardrails</td>
+        <td><span class="badge badge-green">0.2%</span></td>
+      </tr>
+      <tr>
+        <td>HumanEscalationRate</td>
+        <td>% of issues escalated to humans</td>
+        <td>Target 15-25%</td>
+        <td><span class="badge badge-purple">18%</span></td>
+      </tr>
+      <tr>
+        <td>P95ResolutionTime</td>
+        <td>Time from failure detection to fix</td>
+        <td>&gt; 30 min → SLA breach</td>
+        <td><span class="badge badge-green">8.4 min</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="code-wrapper">
+    <div class="code-header">
+      <div class="code-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="code-lang">Python · CDK · Cost Guardrails</div>
+      <div class="code-filename">bedrock_guardrails.py</div>
+    </div>
+    <pre><span class="kw">import</span> boto3
+
+bedrock_agent = boto3.<span class="fn">client</span>(<span class="str">'bedrock'</span>)
+
+<span class="cm"># Create guardrails to control agent costs and safety</span>
+guardrail = bedrock_agent.<span class="fn">create_guardrail</span>(
+    name=<span class="str">'DataEngineeringAgentGuardrail'</span>,
+    description=<span class="str">'Prevent runaway costs and unsafe actions in DE agent'</span>,
+    
+    <span class="cm"># Block topics outside DE scope</span>
+    topicPolicyConfig={
+        <span class="str">'topicsConfig'</span>: [
+            {
+                <span class="str">'name'</span>: <span class="str">'non-data-topics'</span>,
+                <span class="str">'definition'</span>: <span class="str">'Any topic not related to data pipelines, ETL, data quality, or AWS data services'</span>,
+                <span class="str">'type'</span>: <span class="str">'DENY'</span>
+            }
+        ]
+    },
+    
+    <span class="cm"># Block sensitive data from being exposed in agent responses</span>
+    sensitiveInformationPolicyConfig={
+        <span class="str">'piiEntitiesConfig'</span>: [
+            {<span class="str">'type'</span>: <span class="str">'EMAIL'</span>, <span class="str">'action'</span>: <span class="str">'ANONYMIZE'</span>},
+            {<span class="str">'type'</span>: <span class="str">'AWS_ACCESS_KEY'</span>, <span class="str">'action'</span>: <span class="str">'BLOCK'</span>},
+            {<span class="str">'type'</span>: <span class="str">'CREDIT_DEBIT_CARD_NUMBER'</span>, <span class="str">'action'</span>: <span class="str">'ANONYMIZE'</span>}
+        ]
+    },
+    
+    <span class="cm"># Word filter to prevent destructive operation descriptions</span>
+    wordPolicyConfig={
+        <span class="str">'wordsConfig'</span>: [
+            {<span class="str">'text'</span>: <span class="str">'drop table'</span>},
+            {<span class="str">'text'</span>: <span class="str">'delete all'</span>},
+            {<span class="str">'text'</span>: <span class="str">'truncate database'</span>}
+        ]
+    },
+    
+    blockedInputMessaging=<span class="str">"This request is outside the agent's permitted scope."</span>,
+    blockedOutputsMessaging=<span class="str">"Response blocked by data governance guardrail."</span>
+)</pre>
+  </div>
+
+  <!-- SECTION 9 -->
+  <h2>9. Production Checklist</h2>
+
+  <p>Before shipping your agentic data platform to production, validate against this checklist derived from the AWS Well-Architected guidance on AI workloads:</p>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-number">✓</div>
+      <div class="step-content">
+        <h4>Guardrails Configured</h4>
+        <p>Bedrock Guardrails are active on all agent aliases. PII redaction, topic filtering, and word policies are enabled. Test with adversarial prompts before go-live.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">✓</div>
+      <div class="step-content">
+        <h4>Human-in-the-Loop Gates</h4>
+        <p>Low-confidence actions (&lt;80%) route to SQS → SNS → Slack for human approval via Step Functions waitForTaskToken pattern. Never let agents autonomously make irreversible changes without review.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">✓</div>
+      <div class="step-content">
+        <h4>Trace Logging Enabled</h4>
+        <p><code>enableTrace=True</code> on all agent invocations. Traces stored in CloudWatch Logs with 90-day retention for audit compliance. X-Ray tracing active on Lambda action groups.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">✓</div>
+      <div class="step-content">
+        <h4>Cost Alarms Set</h4>
+        <p>CloudWatch alarm on Bedrock token consumption (monthly budget). Lambda concurrency limits on action group functions. Athena workgroup data scanned limit enforced.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">✓</div>
+      <div class="step-content">
+        <h4>Agent Memory Tuned</h4>
+        <p>Memory retention enabled on Bedrock Agent with a 30-day session window. Periodically clean stale sessions via scheduled Lambda. Knowledge Base sync on new runbooks.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">✓</div>
+      <div class="step-content">
+        <h4>IAM Least Privilege</h4>
+        <p>Bedrock Agent IAM role has only the permissions needed. Lambda action groups use separate roles per responsibility. No <code>*</code> resource ARNs. VPC endpoints for Bedrock in regulated environments.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box purple">
+    <div class="info-box-title">💡 Key Takeaway from AWS re:Invent 2024</div>
+    The teams seeing the highest ROI with Agentic DE aren't trying to replace all human judgment — they're using agents to <strong>compress Mean Time to Resolution (MTTR)</strong> from hours to minutes on the 80% of failures that follow known patterns, while routing the novel 20% to humans with rich context already assembled.
+  </div>
+
+  <div class="divider">// END OF GUIDE</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-logo">// AGENTIC-DE-AWS</div>
+    <p>Built on AWS re:Invent 2024 sessions: DAT405, ANT315, AIM347 · Amazon Bedrock · Glue · Step Functions · Athena</p>
+    <p style="margin-top:0.5rem">All code snippets are MIT licensed. AWS service pricing applies.</p>
+  </div>
+</footer>
+
+</body>
+</html>
