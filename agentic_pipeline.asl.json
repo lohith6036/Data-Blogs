@@ -1,0 +1,180 @@
+{
+  "Comment": "Agentic Data Engineering Pipeline — Multi-Agent Orchestration by Lohith Kumar V",
+  "StartAt": "SupervisorAgent",
+  "States": {
+
+    "SupervisorAgent": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeAgent",
+      "Parameters": {
+        "AgentId": "SUPERVISOR_AGENT_ID",
+        "AgentAliasId": "PROD",
+        "SessionId.$": "$.execution_id",
+        "InputText.$": "States.Format('Analyze pipeline health for date {} on pipeline {}. Determine required actions and route to the correct sub-agent.', $.date, $.pipeline_name)",
+        "EnableTrace": true
+      },
+      "ResultPath": "$.supervisor_output",
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "NotifyFailure",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "ParseSupervisionPlan"
+    },
+
+    "ParseSupervisionPlan": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:parse-agent-plan",
+      "Parameters": {
+        "supervisor_output.$": "$.supervisor_output",
+        "context.$": "$"
+      },
+      "ResultPath": "$.plan",
+      "Next": "RouteToSubAgent"
+    },
+
+    "RouteToSubAgent": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.plan.action",
+          "StringEquals": "DATA_QUALITY_REMEDIATION",
+          "Next": "ParallelRemediation"
+        },
+        {
+          "Variable": "$.plan.action",
+          "StringEquals": "SCHEMA_EVOLUTION",
+          "Next": "SchemaEvolutionAgent"
+        },
+        {
+          "Variable": "$.plan.action",
+          "StringEquals": "FULL_RELOAD",
+          "Next": "FullReloadApproval"
+        }
+      ],
+      "Default": "HumanApproval"
+    },
+
+    "ParallelRemediation": {
+      "Type": "Parallel",
+      "Comment": "Run DQ and anomaly agents simultaneously for faster resolution",
+      "Branches": [
+        {
+          "StartAt": "DataQualityAgent",
+          "States": {
+            "DataQualityAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::bedrock:invokeAgent",
+              "Parameters": {
+                "AgentId": "DQ_AGENT_ID",
+                "AgentAliasId": "PROD",
+                "SessionId.$": "States.Format('dq-{}', $.execution_id)",
+                "InputText.$": "$.plan.dq_task"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "AnomalyDetectionAgent",
+          "States": {
+            "AnomalyDetectionAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::bedrock:invokeAgent",
+              "Parameters": {
+                "AgentId": "ANOMALY_AGENT_ID",
+                "AgentAliasId": "PROD",
+                "SessionId.$": "States.Format('anomaly-{}', $.execution_id)",
+                "InputText.$": "$.plan.anomaly_task"
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": "$.remediation_results",
+      "Next": "AggregateAndReport"
+    },
+
+    "SchemaEvolutionAgent": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::bedrock:invokeAgent",
+      "Parameters": {
+        "AgentId": "SCHEMA_AGENT_ID",
+        "AgentAliasId": "PROD",
+        "InputText.$": "$.plan.schema_task"
+      },
+      "ResultPath": "$.schema_result",
+      "Next": "AggregateAndReport"
+    },
+
+    "FullReloadApproval": {
+      "Type": "Task",
+      "Comment": "Full reloads always require human sign-off — high risk / high cost",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT_ID/pipeline-approvals",
+        "MessageBody": {
+          "TaskToken.$": "$$.Task.Token",
+          "Action": "FULL_RELOAD",
+          "Pipeline.$": "$.pipeline_name",
+          "Reason.$": "$.plan.reason",
+          "RequestedBy": "DataEngineeringAgent"
+        }
+      },
+      "HeartbeatSeconds": 3600,
+      "TimeoutSeconds": 86400,
+      "Next": "AggregateAndReport"
+    },
+
+    "HumanApproval": {
+      "Type": "Task",
+      "Comment": "Low-confidence or unknown action type — ask a human",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT_ID/pipeline-approvals",
+        "MessageBody": {
+          "TaskToken.$": "$$.Task.Token",
+          "Plan.$": "$.plan",
+          "SupervisorOutput.$": "$.supervisor_output"
+        }
+      },
+      "TimeoutSeconds": 86400,
+      "Next": "AggregateAndReport"
+    },
+
+    "AggregateAndReport": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:aggregate-results",
+      "Parameters": {
+        "execution_id.$": "$.execution_id",
+        "pipeline_name.$": "$.pipeline_name",
+        "plan.$": "$.plan",
+        "results.$": "$"
+      },
+      "End": true
+    },
+
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:YOUR_ACCOUNT_ID:data-engineering-alerts",
+        "Message.$": "States.Format('Pipeline orchestration failed: {} — Error: {}', $.pipeline_name, $.error.Cause)",
+        "Subject": "AgenticDE — Critical Orchestration Failure"
+      },
+      "End": true
+    }
+
+  }
+}
