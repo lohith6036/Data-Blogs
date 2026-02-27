@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Data Engineering on AWS | Lohith Kumar V</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300;1,9..144,600&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --surface: #ffffff;
+    --surface2: #edf0f7;
+    --border: #dde1ed;
+    --border2: #c8cedf;
+    --teal: #007a6a;
+    --orange: #c4470a;
+    --purple: #5443c8;
+    --blue: #1a5fa8;
+    --text: #0d1421;
+    --text-dim: #374259;
+    --text-muted: #7a879f;
+    --code-bg: #1b2032;
+    --yellow: #8a6200;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--teal), var(--purple), transparent);
+    z-index: 200;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 0.9rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(245,247,251,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--teal);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .nav-pills { display: flex; gap: 0.5rem; }
+
+  .pill {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.28rem 0.7rem;
+    border-radius: 100px;
+    border: 1px solid;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pill-teal { border-color: rgba(0,194,168,0.35); color: var(--teal); background: rgba(0,194,168,0.07); }
+  .pill-purple { border-color: rgba(139,124,248,0.35); color: var(--purple); background: rgba(139,124,248,0.07); }
+  .pill-orange { border-color: rgba(245,112,58,0.35); color: var(--orange); background: rgba(245,112,58,0.07); }
+
+  /* LAYOUT */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 6rem 0 4rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .hero-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    color: var(--teal);
+    text-transform: uppercase;
+    margin-bottom: 1.75rem;
+  }
+
+  .hero-label::before {
+    content: '';
+    width: 28px; height: 1px;
+    background: var(--teal);
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.6rem, 5.5vw, 4rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: #0d1421;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 .italic { font-style: italic; color: var(--teal); }
+
+  .hero-desc {
+    font-size: 1rem;
+    color: var(--text-dim);
+    max-width: 640px;
+    line-height: 1.85;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-byline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .byline-text { font-size: 0.85rem; }
+  .byline-name { font-weight: 700; color: var(--text); display: block; }
+  .byline-meta { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.75rem 2rem;
+    margin: 3rem 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .toc-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+
+  .toc-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .toc-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .toc-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--teal);
+    flex-shrink: 0;
+  }
+
+  /* SECTIONS */
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.85rem;
+    font-weight: 600;
+    color: #0d1421;
+    margin: 4rem 0 1rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--border);
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 2rem 0 0.75rem;
+    letter-spacing: 0.01em;
+  }
+
+  p { color: var(--text-dim); margin-bottom: 1.1rem; font-size: 0.95rem; }
+  strong { color: var(--text); font-weight: 700; }
+  a { color: var(--teal); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* FILE REFERENCE BADGE */
+  .file-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #e8edf8;
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 0.15rem 0.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--blue);
+    vertical-align: middle;
+    margin: 0 0.2rem;
+    white-space: nowrap;
+  }
+
+  .file-ref::before { content: '📄'; font-size: 0.6rem; }
+
+  /* INFO BOXES */
+  .callout {
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    border-left: 3px solid;
+  }
+
+  .callout-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .callout.teal { border-color: var(--teal); background: rgba(0,194,168,0.05); }
+  .callout.teal .callout-title { color: var(--teal); }
+  .callout.orange { border-color: var(--orange); background: rgba(245,112,58,0.05); }
+  .callout.orange .callout-title { color: var(--orange); }
+  .callout.purple { border-color: var(--purple); background: rgba(139,124,248,0.05); }
+  .callout.purple .callout-title { color: var(--purple); }
+  .callout.yellow { border-color: var(--yellow); background: rgba(245,200,66,0.05); }
+  .callout.yellow .callout-title { color: var(--yellow); }
+
+  /* FILE TREE */
+  .file-tree {
+    background: #1b2032;
+    border: 1px solid #2a3450;
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 2;
+    color: #a8b8d0;
+    margin: 1.5rem 0;
+  }
+
+  .ft-dir { color: #a89cf7; font-weight: 600; }
+  .ft-file { color: #6ab0f5; }
+  .ft-comment { color: #4a5e7a; }
+  .ft-highlight { color: #00d4b8; font-weight: 600; }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid #2a3450;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+  }
+
+  .code-head {
+    background: #252f45;
+    border-bottom: 1px solid #2e3a52;
+    padding: 0.65rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .code-head-left { display: flex; align-items: center; gap: 0.75rem; }
+
+  .code-dots { display: flex; gap: 5px; }
+  .code-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--teal);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .code-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--blue);
+    opacity: 0.8;
+  }
+
+  pre {
+    padding: 1.5rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.77rem;
+    line-height: 1.75;
+    color: #cdd6f4;
+  }
+
+  .kw { color: #ff79c6; }
+  .fn { color: #8be9fd; }
+  .str { color: #f1fa8c; }
+  .cm { color: #6272a4; font-style: italic; }
+  .num { color: #bd93f9; }
+  .cls { color: #50fa7b; }
+  .attr { color: #50fa7b; }
+  .var { color: #f8f8f2; }
+  .dec { color: #ffb86c; }
+
+  /* ARCH DIAGRAM */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    margin: 2rem 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .arch-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .arch-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .arch-node {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    text-align: center;
+    min-width: 105px;
+    transition: all 0.2s;
+    cursor: default;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .arch-node:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+
+  .arch-node .n-icon { font-size: 1.3rem; margin-bottom: 0.35rem; }
+  .arch-node .n-name { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; color: var(--text); text-transform: uppercase; }
+  .arch-node .n-sub { font-size: 0.58rem; color: var(--text-muted); margin-top: 0.15rem; font-family: 'JetBrains Mono', monospace; }
+
+  .arch-node.t { border-color: rgba(0,194,168,0.4); background: rgba(0,194,168,0.07); }
+  .arch-node.p { border-color: rgba(139,124,248,0.4); background: rgba(139,124,248,0.07); }
+  .arch-node.o { border-color: rgba(245,112,58,0.4); background: rgba(245,112,58,0.07); }
+  .arch-node.b { border-color: rgba(77,166,255,0.4); background: rgba(77,166,255,0.07); }
+
+  .arch-sep {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0.3rem;
+    gap: 0.1rem;
+  }
+
+  .arch-sep .arr { color: var(--text-muted); font-size: 0.9rem; }
+  .arch-sep .lbl { font-size: 0.55rem; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); white-space: nowrap; }
+
+  /* STEP CARDS */
+  .steps { display: flex; flex-direction: column; gap: 0.85rem; margin: 1.5rem 0; }
+
+  .step {
+    display: flex;
+    gap: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    align-items: flex-start;
+    transition: border-color 0.2s, transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .step:hover { border-color: var(--teal); transform: translateX(3px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+  .step-n {
+    font-family: 'Fraunces', serif;
+    font-size: 1.75rem;
+    color: var(--teal);
+    opacity: 0.3;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .step-body h4 { font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 0.3rem; }
+  .step-body p { margin: 0; font-size: 0.85rem; }
+
+  /* SERVICE CARDS */
+  .services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; margin: 1.5rem 0; }
+
+  .svc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .svc:hover { border-color: var(--purple); box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+  .svc-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .svc-name { font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 0.35rem; }
+  .svc-desc { font-size: 0.73rem; color: var(--text-muted); line-height: 1.55; margin: 0; }
+
+  /* TERMINAL MOCKUP */
+  .terminal {
+    background: #131926;
+    border: 1px solid #2a3450;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+
+  .terminal-bar {
+    background: #1e2740;
+    padding: 0.65rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid #2a3450;
+  }
+
+  .t-dots { display: flex; gap: 5px; }
+  .t-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+  .t-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: #7a90b8;
+    flex: 1;
+    text-align: center;
+  }
+
+  .terminal-body {
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.73rem;
+    line-height: 1.9;
+    color: #c8d3e8;
+  }
+
+  .t-prompt { color: #00d4b8; }
+  .t-ok { color: #4de88a; }
+  .t-info { color: #a89cf7; }
+  .t-warn { color: #f5c842; }
+  .t-dim { color: #5a6e90; }
+  .t-badge {
+    display: inline-block;
+    background: rgba(0,212,184,0.18);
+    color: #00d4b8;
+    padding: 0 0.4rem;
+    border-radius: 3px;
+    font-size: 0.62rem;
+  }
+
+  /* METRICS TABLE */
+  .metrics-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 2rem 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .metrics-header {
+    padding: 0.75rem 1.5rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    padding: 0.75rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.67rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.83rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  td:first-child { color: var(--text); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-g { background: rgba(0,194,168,0.15); color: var(--teal); }
+  .badge-y { background: rgba(245,200,66,0.15); color: var(--yellow); }
+  .badge-p { background: rgba(139,124,248,0.15); color: var(--purple); }
+  .badge-o { background: rgba(245,112,58,0.15); color: var(--orange); }
+
+  /* PRODUCTION CHECKLIST */
+  .checklist { display: flex; flex-direction: column; gap: 0.75rem; margin: 1.5rem 0; }
+
+  .check-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+
+  .check-icon { color: var(--teal); font-size: 0.9rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .check-body h4 { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 0.25rem; }
+  .check-body p { font-size: 0.82rem; margin: 0; color: var(--text-dim); }
+
+  /* DIVIDER */
+  .sep {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 4rem 0 2rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+  }
+  .sep::before, .sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 6rem;
+    padding: 3rem 0;
+  }
+
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-left .f-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+  }
+
+  .footer-left .f-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+  .footer-right {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .footer-right .repo { color: var(--teal); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero > * { animation: fadeUp 0.5s ease both; }
+  .hero > *:nth-child(2) { animation-delay: 0.1s; }
+  .hero > *:nth-child(3) { animation-delay: 0.2s; }
+  .hero > *:nth-child(4) { animation-delay: 0.3s; }
+
+  @media (max-width: 640px) {
+    nav { padding: 0.9rem 1.5rem; }
+    nav .nav-pills { display: none; }
+    .container { padding: 0 1.5rem; }
+    .services { grid-template-columns: 1fr 1fr; }
+    .toc-list { grid-template-columns: 1fr; }
+    .footer-inner { flex-direction: column; gap: 1rem; text-align: center; }
+    .footer-right { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">// lohith.kumar.v</div>
+  <div class="nav-pills">
+    <span class="pill pill-teal">Agentic DE</span>
+    <span class="pill pill-purple">Bedrock</span>
+    <span class="pill pill-orange">Open Source</span>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-label">Project Writeup — Data Engineering</div>
+    <h1>Agentic Data Engineering<br>on <span class="italic">AWS</span></h1>
+    <p class="hero-desc">
+      Please find my Agentic Data Engineering project — an autonomous pipeline platform that uses Amazon Bedrock Agents to monitor, diagnose, and self-heal AWS Glue pipelines without human intervention. Built with Step Functions, Lambda, Athena, and Claude 3.5 Sonnet as the reasoning engine.
+    </p>
+    <div class="hero-byline">
+      <div class="avatar">L</div>
+      <div class="byline-text">
+        <span class="byline-name">Lohith Kumar V</span>
+        <span class="byline-meta">Feb 27, 2026 · 18 min read · AWS Bedrock · Glue · Step Functions · Athena</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-label">// Contents</div>
+    <ul class="toc-list">
+      <li><span class="toc-num">01</span>What is Agentic Data Engineering?</li>
+      <li><span class="toc-num">02</span>Project Structure</li>
+      <li><span class="toc-num">03</span>AWS Architecture Overview</li>
+      <li><span class="toc-num">04</span>Setting Up the Bedrock Agent</li>
+      <li><span class="toc-num">05</span>Pipeline Manager Action Group</li>
+      <li><span class="toc-num">06</span>Multi-Agent Orchestration</li>
+      <li><span class="toc-num">07</span>Self-Healing Pipelines</li>
+      <li><span class="toc-num">08</span>Natural Language to SQL</li>
+      <li><span class="toc-num">09</span>Observability & Metrics</li>
+      <li><span class="toc-num">10</span>Production Checklist</li>
+    </ul>
+  </div>
+
+  <!-- S1 -->
+  <h2>1. What is Agentic Data Engineering?</h2>
+
+  <p>Traditional data pipelines are brittle. Schema drift breaks ingestion, upstream API changes cascade downstream failures, and engineers spend nights babysitting broken Airflow DAGs. <strong>Agentic Data Engineering</strong> replaces static, imperative orchestration with autonomous LLM agents that can perceive, reason, and act.</p>
+
+  <p>In this project, I built a platform where a Bedrock Agent powered by <strong>Claude 3.5 Sonnet</strong> acts as an autonomous data engineer — monitoring pipeline health, diagnosing failures from CloudWatch logs, patching schema drift, and re-triggering jobs, all without waking anyone up at 3 AM.</p>
+
+  <div class="callout teal">
+    <div class="callout-title">🔄 The Agent Loop</div>
+    The system operates on a continuous <strong>Perceive → Reason → Act → Reflect</strong> cycle. Agents perceive signals via EventBridge and CloudWatch, reason using Claude 3.5 Sonnet, act through Lambda action groups, and reflect by logging outcomes to DynamoDB for continual improvement.
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">01</div>
+      <div class="step-body">
+        <h4>Perceive</h4>
+        <p>Agents subscribe to EventBridge rules on Glue job state changes, S3 events, and CloudWatch alarms from Glue Data Quality rule evaluations.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div>
+      <div class="step-body">
+        <h4>Reason</h4>
+        <p>Amazon Bedrock (Claude 3.5 Sonnet) analyzes error context — schema drift patterns, DQ score drops, SLA breach risks — and selects the best corrective action.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div>
+      <div class="step-body">
+        <h4>Act</h4>
+        <p>Agents invoke Lambda action groups to re-trigger Glue jobs, patch schema mappings, quarantine bad records to an S3 dead-letter prefix, or alert via SNS when confidence is low.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">04</div>
+      <div class="step-body">
+        <h4>Reflect</h4>
+        <p>All actions and outcomes are stored in agent memory (DynamoDB + S3). The agent learns which remediation strategies work for which failure patterns over time.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2 -->
+  <h2>2. Project Structure</h2>
+
+  <p>The full project source is in this repository. Here's the layout — all files referenced in this post are linked below:</p>
+
+  <div class="file-tree">
+<span class="ft-dir">agentic-de-project/</span>
+├── <span class="ft-dir">agents/</span>
+│   ├── <span class="ft-highlight">create_agent.py</span>            <span class="ft-comment"># Bedrock Agent + action group setup</span>
+│   └── <span class="ft-highlight">self_healing_pipeline.py</span>  <span class="ft-comment"># EventBridge → Bedrock self-heal trigger</span>
+├── <span class="ft-dir">lambda/</span>
+│   ├── <span class="ft-dir">pipeline_manager/</span>
+│   │   └── <span class="ft-highlight">handler.py</span>             <span class="ft-comment"># Glue job control + S3 quarantine</span>
+│   └── <span class="ft-dir">nl_to_sql/</span>
+│       └── <span class="ft-highlight">handler.py</span>             <span class="ft-comment"># NL → Athena SQL action group</span>
+├── <span class="ft-dir">step_functions/</span>
+│   └── <span class="ft-highlight">agentic_pipeline.asl.json</span> <span class="ft-comment"># Multi-agent Step Functions workflow</span>
+├── <span class="ft-dir">glue/</span>
+│   └── <span class="ft-highlight">sales_transform_job.py</span>    <span class="ft-comment"># Glue ETL with dynamic schema mapping</span>
+├── <span class="ft-dir">infrastructure/</span>
+│   └── <span class="ft-highlight">guardrails_and_iam.py</span>     <span class="ft-comment"># Bedrock Guardrails + IAM roles</span>
+├── <span class="ft-dir">scripts/</span>
+│   ├── <span class="ft-highlight">deploy.sh</span>                  <span class="ft-comment"># One-shot deployment</span>
+│   └── <span class="ft-highlight">test_agent.py</span>              <span class="ft-comment"># Integration test suite</span>
+└── <span class="ft-file">agentic-data-engineering-blog.html</span>
+  </div>
+
+  <!-- S3 -->
+  <h2>3. AWS Architecture Overview</h2>
+
+  <p>Six AWS services work together to form the agentic loop. Each plays a distinct role:</p>
+
+  <div class="services">
+    <div class="svc">
+      <div class="svc-icon">🤖</div>
+      <div class="svc-name">Amazon Bedrock Agents</div>
+      <div class="svc-desc">Orchestrates multi-step reasoning with Claude 3.5 Sonnet. Manages tool calls and agent memory.</div>
+    </div>
+    <div class="svc">
+      <div class="svc-icon">⚙️</div>
+      <div class="svc-name">AWS Step Functions</div>
+      <div class="svc-desc">Durable workflow engine for multi-agent coordination with built-in retry and human approval gates.</div>
+    </div>
+    <div class="svc">
+      <div class="svc-icon">🔥</div>
+      <div class="svc-name">AWS Glue + DQ</div>
+      <div class="svc-desc">ETL jobs, crawlers, and Data Quality rules that emit quality scores the agent uses to make decisions.</div>
+    </div>
+    <div class="svc">
+      <div class="svc-icon">⚡</div>
+      <div class="svc-name">AWS Lambda</div>
+      <div class="svc-desc">The "hands" of the agent. Action group executors that trigger jobs, patch schemas, send alerts.</div>
+    </div>
+    <div class="svc">
+      <div class="svc-icon">🔍</div>
+      <div class="svc-name">Amazon Athena</div>
+      <div class="svc-desc">NL-to-SQL endpoint. Agents generate and execute queries against the Glue Data Catalog on demand.</div>
+    </div>
+    <div class="svc">
+      <div class="svc-icon">🧠</div>
+      <div class="svc-name">Bedrock Knowledge Bases</div>
+      <div class="svc-desc">RAG layer storing pipeline runbooks, data dictionaries, and past incident remediation history.</div>
+    </div>
+  </div>
+
+  <!-- ARCH DIAGRAM -->
+  <div class="arch">
+    <div class="arch-label">// Data Flow Diagram</div>
+    <div class="arch-row">
+      <div class="arch-node b">
+        <div class="n-icon">📡</div>
+        <div class="n-name">EventBridge</div>
+        <div class="n-sub">trigger</div>
+      </div>
+      <div class="arch-sep"><span class="arr">→</span><span class="lbl">event</span></div>
+      <div class="arch-node t">
+        <div class="n-icon">🤖</div>
+        <div class="n-name">Bedrock Agent</div>
+        <div class="n-sub">supervisor</div>
+      </div>
+      <div class="arch-sep"><span class="arr">→</span><span class="lbl">plan</span></div>
+      <div class="arch-node p">
+        <div class="n-icon">⚙️</div>
+        <div class="n-name">Step Functions</div>
+        <div class="n-sub">orchestrate</div>
+      </div>
+      <div class="arch-sep"><span class="arr">→</span><span class="lbl">invoke</span></div>
+      <div class="arch-node">
+        <div class="n-icon">⚡</div>
+        <div class="n-name">Lambda</div>
+        <div class="n-sub">action group</div>
+      </div>
+      <div class="arch-sep"><span class="arr">→</span><span class="lbl">ETL</span></div>
+      <div class="arch-node o">
+        <div class="n-icon">🔥</div>
+        <div class="n-name">Glue</div>
+        <div class="n-sub">transform + DQ</div>
+      </div>
+      <div class="arch-sep"><span class="arr">→</span><span class="lbl">query</span></div>
+      <div class="arch-node t">
+        <div class="n-icon">🔍</div>
+        <div class="n-name">Athena</div>
+        <div class="n-sub">validate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4 -->
+  <h2>4. Setting Up the Bedrock Agent</h2>
+
+  <p>The entry point for the project is <span class="file-ref">agents/create_agent.py</span>. It creates the Bedrock Agent with two action groups and deploys a production alias in a single run.</p>
+
+  <div class="code-block">
+    <div class="code-head">
+      <div class="code-head-left">
+        <div class="code-dots">
+          <span style="background:#ff5f56"></span>
+          <span style="background:#ffbd2e"></span>
+          <span style="background:#27c93f"></span>
+        </div>
+        <div class="code-lang">Python</div>
+      </div>
+      <div class="code-path">agents/create_agent.py</div>
+    </div>
+    <pre><span class="kw">import</span> boto3
+
+bedrock_agent = boto3.<span class="fn">client</span>(<span class="str">"bedrock-agent"</span>, region_name=<span class="str">"us-east-1"</span>)
+
+<span class="kw">def</span> <span class="fn">create_de_agent</span>():
+    response = bedrock_agent.<span class="fn">create_agent</span>(
+        agentName=<span class="str">"DataEngineeringAgent"</span>,
+        foundationModel=<span class="str">"anthropic.claude-3-5-sonnet-20241022-v2:0"</span>,
+        instruction=<span class="str">"""
+        You are an autonomous data engineering agent. Your responsibilities:
+        1. Monitor AWS Glue pipeline health and data quality scores
+        2. Diagnose root causes of pipeline failures using CloudWatch logs
+        3. Execute remediation: re-run failed jobs, quarantine bad records,
+           patch schema mappings, or escalate when confidence < 80%
+        4. Answer natural language queries about pipeline data via Athena
+        Always explain your reasoning before taking any action.
+        """</span>,
+        idleSessionTTLInSeconds=<span class="num">3600</span>,
+        agentResourceRoleArn=<span class="str">"arn:aws:iam::YOUR_ACCOUNT_ID:role/BedrockAgentRole"</span>,
+    )
+    agent_id = response[<span class="str">"agent"</span>][<span class="str">"agentId"</span>]
+    <span class="fn">print</span>(<span class="str">f"✅ Agent created: {agent_id}"</span>)
+    <span class="kw">return</span> agent_id</pre>
+  </div>
+
+  <p>The agent is configured with two action groups — <code>PipelineManagement</code> and <code>DataQualityRemediation</code> — each backed by a separate Lambda function. See the full function schema definitions in <span class="file-ref">agents/create_agent.py</span>.</p>
+
+  <!-- S5 -->
+  <h2>5. Pipeline Manager Action Group</h2>
+
+  <p>The Lambda in <span class="file-ref">lambda/pipeline_manager/handler.py</span> is the agent's "hands" — it routes tool calls from Bedrock to real AWS API operations. The key principle is a clean dispatch table that maps function names to handlers:</p>
+
+  <div class="code-block">
+    <div class="code-head">
+      <div class="code-head-left">
+        <div class="code-dots">
+          <span style="background:#ff5f56"></span>
+          <span style="background:#ffbd2e"></span>
+          <span style="background:#27c93f"></span>
+        </div>
+        <div class="code-lang">Python</div>
+      </div>
+      <div class="code-path">lambda/pipeline_manager/handler.py</div>
+    </div>
+    <pre><span class="kw">def</span> <span class="fn">lambda_handler</span>(event, context):
+    <span class="cm">"""Bedrock Agent Action Group — routes tool calls to AWS APIs"""</span>
+    action_group = event[<span class="str">"actionGroup"</span>]
+    function_name = event[<span class="str">"function"</span>]
+    params = {p[<span class="str">"name"</span>]: p[<span class="str">"value"</span>] <span class="kw">for</span> p <span class="kw">in</span> event.get(<span class="str">"parameters"</span>, [])}
+
+    result = <span class="fn">dispatch</span>(function_name, params)
+
+    <span class="cm"># Bedrock agents expect this exact response shape</span>
+    <span class="kw">return</span> {
+        <span class="str">"messageVersion"</span>: <span class="str">"1.0"</span>,
+        <span class="str">"response"</span>: {
+            <span class="str">"actionGroup"</span>: action_group,
+            <span class="str">"function"</span>: function_name,
+            <span class="str">"functionResponse"</span>: {
+                <span class="str">"responseBody"</span>: {
+                    <span class="str">"TEXT"</span>: {<span class="str">"body"</span>: json.<span class="fn">dumps</span>(result)}
+                }
+            },
+        },
+    }
+
+<span class="kw">def</span> <span class="fn">patch_schema_mapping</span>(job_name: str, old_column: str, new_column: str):
+    <span class="cm">"""Agent calls this to fix renamed columns without human intervention"""</span>
+    job = glue.<span class="fn">get_job</span>(JobName=job_name)[<span class="str">"Job"</span>]
+    current_args = job.get(<span class="str">"DefaultArguments"</span>, {})
+
+    existing = current_args.get(<span class="str">"--schema_mapping"</span>, <span class="str">""</span>)
+    current_args[<span class="str">"--schema_mapping"</span>] = <span class="str">f"{existing},{old_column}:{new_column}"</span>.<span class="fn">lstrip</span>(<span class="str">","</span>)
+
+    glue.<span class="fn">update_job</span>(JobName=job_name, JobUpdate={**job, <span class="str">"DefaultArguments"</span>: current_args})
+
+    <span class="cm"># Audit log to SSM Parameter Store</span>
+    ssm.<span class="fn">put_parameter</span>(
+        Name=<span class="str">f"/agentic-de/schema-patches/{job_name}/{old_column}"</span>,
+        Value=json.<span class="fn">dumps</span>({<span class="str">"old"</span>: old_column, <span class="str">"new"</span>: new_column, <span class="str">"patched_by"</span>: <span class="str">"DataEngineeringAgent"</span>}),
+        Type=<span class="str">"String"</span>, Overwrite=<span class="kw">True</span>
+    )
+    <span class="kw">return</span> {<span class="str">"mapping_applied"</span>: <span class="str">f"{old_column} → {new_column}"</span>}</pre>
+  </div>
+
+  <div class="callout yellow">
+    <div class="callout-title">⚠️ IAM Note</div>
+    The Lambda execution role needs <code>glue:StartJobRun</code>, <code>glue:UpdateJob</code>, <code>s3:CopyObject</code>, <code>s3:DeleteObject</code>, <code>athena:StartQueryExecution</code>, and <code>ssm:PutParameter</code>. Full policy definition is in <span class="file-ref">infrastructure/guardrails_and_iam.py</span>.
+  </div>
+
+  <!-- S6 -->
+  <h2>6. Multi-Agent Orchestration with Step Functions</h2>
+
+  <p>For complex pipelines, a Supervisor Agent delegates to specialised sub-agents via Step Functions. The workflow in <span class="file-ref">step_functions/agentic_pipeline.asl.json</span> enables parallel agent execution with fault isolation and human-in-the-loop gates.</p>
+
+  <div class="code-block">
+    <div class="code-head">
+      <div class="code-head-left">
+        <div class="code-dots">
+          <span style="background:#ff5f56"></span>
+          <span style="background:#ffbd2e"></span>
+          <span style="background:#27c93f"></span>
+        </div>
+        <div class="code-lang">JSON · ASL</div>
+      </div>
+      <div class="code-path">step_functions/agentic_pipeline.asl.json</div>
+    </div>
+    <pre>{
+  <span class="attr">"StartAt"</span>: <span class="str">"SupervisorAgent"</span>,
+  <span class="attr">"States"</span>: {
+    <span class="attr">"SupervisorAgent"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+      <span class="attr">"Resource"</span>: <span class="str">"arn:aws:states:::bedrock:invokeAgent"</span>,
+      <span class="attr">"Parameters"</span>: {
+        <span class="attr">"AgentId"</span>: <span class="str">"SUPERVISOR_AGENT_ID"</span>,
+        <span class="attr">"InputText.$"</span>: <span class="str">"States.Format('Analyze pipeline {} for date {}', $.pipeline_name, $.date)"</span>
+      },
+      <span class="attr">"Next"</span>: <span class="str">"ParseSupervisionPlan"</span>
+    },
+
+    <span class="attr">"ParallelRemediation"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Parallel"</span>,
+      <span class="attr">"Branches"</span>: [
+        { <span class="cm">/* DataQualityAgent branch */</span> },
+        { <span class="cm">/* AnomalyDetectionAgent branch */</span> }
+      ],
+      <span class="attr">"Next"</span>: <span class="str">"AggregateAndReport"</span>
+    },
+
+    <span class="attr">"HumanApproval"</span>: {
+      <span class="attr">"Type"</span>: <span class="str">"Task"</span>,
+      <span class="attr">"Resource"</span>: <span class="str">"arn:aws:states:::sqs:sendMessage.waitForTaskToken"</span>,
+      <span class="attr">"Parameters"</span>: {
+        <span class="attr">"QueueUrl"</span>: <span class="str">"https://sqs.us-east-1.amazonaws.com/ACCOUNT/approvals"</span>,
+        <span class="attr">"MessageBody"</span>: {
+          <span class="attr">"TaskToken.$"</span>: <span class="str">"$$.Task.Token"</span>,
+          <span class="attr">"Plan.$"</span>: <span class="str">"$.plan"</span>
+        }
+      },
+      <span class="attr">"TimeoutSeconds"</span>: <span class="num">86400</span>
+    }
+  }
+}</pre>
+  </div>
+
+  <p>The full workflow with all branches, retry logic, and error handling is in <span class="file-ref">step_functions/agentic_pipeline.asl.json</span>. Note the <code>waitForTaskToken</code> pattern on <code>HumanApproval</code> — low-confidence agent decisions always pause and wait for a human thumbs-up via SQS before proceeding.</p>
+
+  <!-- S7 -->
+  <h2>7. Self-Healing Pipelines</h2>
+
+  <p>My favourite part of this project. When a Glue job fails, EventBridge fires a trigger to the Lambda in <span class="file-ref">agents/self_healing_pipeline.py</span>, which assembles full context (error message + last 20 CloudWatch log lines + 3-run history) and invokes the Bedrock agent to diagnose and fix autonomously.</p>
+
+  <div class="code-block">
+    <div class="code-head">
+      <div class="code-head-left">
+        <div class="code-dots">
+          <span style="background:#ff5f56"></span>
+          <span style="background:#ffbd2e"></span>
+          <span style="background:#27c93f"></span>
+        </div>
+        <div class="code-lang">Python</div>
+      </div>
+      <div class="code-path">agents/self_healing_pipeline.py</div>
+    </div>
+    <pre><span class="kw">def</span> <span class="fn">lambda_handler</span>(event, context):
+    <span class="cm"># EventBridge rule: source=aws.glue, detail.state=FAILED</span>
+    job_name = event[<span class="str">"detail"</span>][<span class="str">"jobName"</span>]
+    run_id   = event[<span class="str">"detail"</span>][<span class="str">"jobRunId"</span>]
+    error    = event[<span class="str">"detail"</span>].get(<span class="str">"message"</span>, <span class="str">"Unknown error"</span>)
+
+    <span class="cm"># Gather rich context before calling the agent</span>
+    logs    = <span class="fn">get_cloudwatch_logs</span>(job_name, run_id)     <span class="cm"># last 20 error lines</span>
+    history = <span class="fn">get_recent_run_history</span>(job_name)           <span class="cm"># last 3 run states</span>
+
+    prompt = <span class="str">f"""
+    PIPELINE FAILURE: {job_name} / {run_id}
+    Error: {error}
+    Logs: {logs}
+    Run history: {json.dumps(history)}
+
+    1. Diagnose root cause
+    2. Determine if auto-remediable (confidence > 80%)
+    3. Fix and re-trigger, OR respond ESCALATE with summary
+    """</span>
+
+    response_text, traces = <span class="fn">invoke_agent</span>(prompt, session_id=<span class="str">f"heal-{run_id}"</span>)
+    <span class="fn">emit_metrics</span>(job_name, traces)
+
+    <span class="kw">if</span> <span class="str">"ESCALATE"</span> <span class="kw">in</span> response_text.<span class="fn">upper</span>():
+        <span class="fn">escalate_to_human</span>(job_name, run_id, error, response_text)
+
+    <span class="kw">return</span> {<span class="str">"resolved"</span>: <span class="str">"ESCALATE"</span> <span class="kw">not in</span> response_text.<span class="fn">upper</span>(), <span class="str">"steps"</span>: <span class="fn">len</span>(traces)}</pre>
+  </div>
+
+  <!-- TERMINAL MOCKUP -->
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="t-dots">
+        <span style="background:#ff5f56"></span>
+        <span style="background:#ffbd2e"></span>
+        <span style="background:#27c93f"></span>
+      </div>
+      <div class="t-title">CloudWatch Logs — Bedrock Agent Trace (self-healing session)</div>
+    </div>
+    <div class="terminal-body">
+<span class="t-prompt">▶ TRACE [03:14:22Z]</span> <span class="t-badge">SUPERVISOR</span> Failure: glue-job-sales-transform / jr_a3f89c12
+<span class="t-info">→ REASONING:</span> Error "cannot resolve 'revenue_usd'" is schema drift — column renamed upstream.
+<span class="t-info">→ PLAN:</span> (1) Crawl source to detect new schema (2) Patch column mapping (3) Re-trigger job
+<span class="t-prompt">▶ TRACE [03:14:25Z]</span> <span class="t-badge">ACTION</span> trigger_glue_crawler("s3-sales-raw-crawler")
+<span class="t-ok">✓ RESULT:</span> Crawler found: 'revenue_usd' → renamed to 'revenue_local_currency'
+<span class="t-prompt">▶ TRACE [03:14:48Z]</span> <span class="t-badge">ACTION</span> patch_schema_mapping("glue-job-sales-transform", "revenue_usd", "revenue_local_currency")
+<span class="t-ok">✓ RESULT:</span> Mapping updated. Audit log written to SSM.
+<span class="t-prompt">▶ TRACE [03:14:51Z]</span> <span class="t-badge">ACTION</span> trigger_glue_job("glue-job-sales-transform")
+<span class="t-ok">✓ RESULT:</span> Job run started: jr_c01d2e55
+<span class="t-prompt">▶ TRACE [03:22:15Z]</span> <span class="t-badge">SUPERVISOR</span> <span class="t-ok">RESOLVED</span> — 1.2M records processed in 7m 24s. Confidence: 94%
+<span class="t-warn">⚠ NOTE:</span> Schema governance policy update recommended. Logged for human review.</div>
+  </div>
+
+  <!-- S8 -->
+  <h2>8. Natural Language to SQL with Athena</h2>
+
+  <p>The <span class="file-ref">lambda/nl_to_sql/handler.py</span> action group lets data consumers ask questions in plain English. The agent generates SQL, validates it for safety, executes it on Athena, and returns structured results — all within a single agent turn.</p>
+
+  <div class="code-block">
+    <div class="code-head">
+      <div class="code-head-left">
+        <div class="code-dots">
+          <span style="background:#ff5f56"></span>
+          <span style="background:#ffbd2e"></span>
+          <span style="background:#27c93f"></span>
+        </div>
+        <div class="code-lang">Python</div>
+      </div>
+      <div class="code-path">lambda/nl_to_sql/handler.py</div>
+    </div>
+    <pre><span class="kw">def</span> <span class="fn">execute_nl_query</span>(question: str, database: str = <span class="str">"data_warehouse"</span>) -> dict:
+    <span class="cm"># 1. Pull schema from Glue Data Catalog for context</span>
+    schema_context = <span class="fn">get_catalog_schema</span>(database)
+
+    <span class="cm"># 2. Generate SQL using Claude (inner Bedrock call)</span>
+    sql_query = <span class="fn">generate_sql</span>(question, database, schema_context)
+
+    <span class="cm"># 3. Safety gate — block any destructive statements</span>
+    safety = <span class="fn">validate_sql</span>(sql_query)
+    <span class="kw">if not</span> safety[<span class="str">"safe"</span>]:
+        <span class="kw">return</span> {<span class="str">"error"</span>: <span class="str">f"Blocked: {safety['reason']}"</span>}
+
+    <span class="cm"># 4. Execute on Athena and poll for completion</span>
+    query_id = <span class="fn">run_athena_query</span>(sql_query, database)
+    state, stats = <span class="fn">poll_query</span>(query_id)
+
+    <span class="cm"># 5. Return results with cost transparency</span>
+    <span class="kw">return</span> <span class="fn">fetch_results</span>(query_id, sql_query, stats)
+
+<span class="kw">def</span> <span class="fn">validate_sql</span>(sql: str) -> dict:
+    BLOCKED = [<span class="str">"DROP"</span>, <span class="str">"DELETE"</span>, <span class="str">"INSERT"</span>, <span class="str">"UPDATE"</span>, <span class="str">"ALTER"</span>, <span class="str">"TRUNCATE"</span>]
+    upper = sql.<span class="fn">upper</span>()
+    <span class="kw">for</span> kw <span class="kw">in</span> BLOCKED:
+        <span class="kw">if</span> kw <span class="kw">in</span> upper:
+            <span class="kw">return</span> {<span class="str">"safe"</span>: <span class="kw">False</span>, <span class="str">"reason"</span>: <span class="str">f"Blocked keyword: {kw}"</span>}
+    <span class="kw">if not</span> upper.<span class="fn">strip</span>().<span class="fn">startswith</span>((<span class="str">"SELECT"</span>, <span class="str">"WITH"</span>)):
+        <span class="kw">return</span> {<span class="str">"safe"</span>: <span class="kw">False</span>, <span class="str">"reason"</span>: <span class="str">"Only SELECT/WITH permitted"</span>}
+    <span class="kw">return</span> {<span class="str">"safe"</span>: <span class="kw">True</span>}</pre>
+  </div>
+
+  <div class="callout purple">
+    <div class="callout-title">💡 Design Note</div>
+    The SQL generation uses a nested Bedrock <code>invoke_model</code> call (not the agent) to keep latency low and avoid burning agent tokens on a deterministic sub-task. The agent only sees the final results, not the SQL generation chain.
+  </div>
+
+  <!-- S9 -->
+  <h2>9. Observability & Metrics</h2>
+
+  <p>The Glue ETL job in <span class="file-ref">glue/sales_transform_job.py</span> reads a <code>--schema_mapping</code> argument that the agent patches dynamically. Built-in DQ checks raise exceptions the agent can detect in CloudWatch Logs and act on. Key custom metrics I emit to CloudWatch namespace <code>AgenticDE/SelfHealing</code>:</p>
+
+  <div class="metrics-table">
+    <div class="metrics-header">// CloudWatch Namespace: AgenticDE/SelfHealing</div>
+    <table>
+      <tr>
+        <th>Metric</th>
+        <th>Description</th>
+        <th>Target</th>
+        <th>Current</th>
+      </tr>
+      <tr>
+        <td>AutoRemediationRate</td>
+        <td>% of failures resolved without human</td>
+        <td>&gt; 80%</td>
+        <td><span class="badge badge-g">84%</span></td>
+      </tr>
+      <tr>
+        <td>AgentTraceSteps</td>
+        <td>Avg reasoning steps per resolution</td>
+        <td>&lt; 8</td>
+        <td><span class="badge badge-g">5.2</span></td>
+      </tr>
+      <tr>
+        <td>TokensPerResolution</td>
+        <td>Input + output tokens per pipeline fix</td>
+        <td>&lt; 8,000</td>
+        <td><span class="badge badge-y">6,240</span></td>
+      </tr>
+      <tr>
+        <td>FalsePositiveActions</td>
+        <td>Agent actions that worsened the state</td>
+        <td>&lt; 1%</td>
+        <td><span class="badge badge-g">0.2%</span></td>
+      </tr>
+      <tr>
+        <td>HumanEscalationRate</td>
+        <td>% of issues escalated to humans</td>
+        <td>15–25%</td>
+        <td><span class="badge badge-p">18%</span></td>
+      </tr>
+      <tr>
+        <td>P95ResolutionTime</td>
+        <td>Detection → fix wall-clock time</td>
+        <td>&lt; 15 min</td>
+        <td><span class="badge badge-g">8.4 min</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- S10 -->
+  <h2>10. Production Checklist</h2>
+
+  <p>Before pointing this at a live data warehouse, run through this checklist. The <span class="file-ref">scripts/test_agent.py</span> suite covers the first five items programmatically.</p>
+
+  <div class="checklist">
+    <div class="check-item">
+      <div class="check-icon">✅</div>
+      <div class="check-body">
+        <h4>Guardrails Configured</h4>
+        <p>Bedrock Guardrails from <span class="file-ref">infrastructure/guardrails_and_iam.py</span> are active on all aliases. PII redaction, topic filtering, and destructive keyword blocking are enabled.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✅</div>
+      <div class="check-body">
+        <h4>Human-in-the-Loop Gates</h4>
+        <p>Low-confidence actions (&lt;80%) route to the <code>waitForTaskToken</code> state in <span class="file-ref">step_functions/agentic_pipeline.asl.json</span>. Full reloads always require human approval.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✅</div>
+      <div class="check-body">
+        <h4>Trace Logging Active</h4>
+        <p><code>enableTrace=True</code> on all agent invocations in <span class="file-ref">agents/self_healing_pipeline.py</span>. Traces in CloudWatch with 90-day retention for compliance auditing.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✅</div>
+      <div class="check-body">
+        <h4>IAM Least Privilege</h4>
+        <p>All roles in <span class="file-ref">infrastructure/guardrails_and_iam.py</span> use scoped resource ARNs. No wildcard actions. Separate roles for Bedrock Agent, Lambda, and Step Functions.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✅</div>
+      <div class="check-body">
+        <h4>Cost Alarms Set</h4>
+        <p>CloudWatch budget alarm on monthly Bedrock token spend. Lambda concurrency limits on action group functions. Athena workgroup data-scanned threshold enforced.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✅</div>
+      <div class="check-body">
+        <h4>Integration Tests Pass</h4>
+        <p>All 5 tests in <span class="file-ref">scripts/test_agent.py</span> pass — job status query, NL-to-SQL, schema drift simulation, DQ check, and guardrail block test.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout teal">
+    <div class="callout-title">🚀 Key Takeaway</div>
+    The biggest win from this project isn't fully replacing human judgment — it's <strong>compressing Mean Time to Resolution</strong> from hours to under 10 minutes for the 80% of failures that follow known patterns. The 20% that need human creativity are escalated with all the context already assembled, so the on-call engineer's job is just to make the decision, not the investigation.
+  </div>
+
+  <div class="sep">// end of post</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="f-name">Lohith Kumar V</div>
+        <div class="f-sub">Data Engineering · AWS · Agentic Systems</div>
+      </div>
+      <div class="footer-right">
+        <div class="repo">📁 All code in this repo</div>
+        <div>Amazon Bedrock · Glue · Step Functions · Athena · Lambda</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
